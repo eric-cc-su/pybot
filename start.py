@@ -14,10 +14,10 @@ for filename in files:
 if brain and os.path.isfile(brain):
     kernel.bootstrap(brainFile=brain)
 else:
-    print("No brain found. Initialize a chatbot brain with Chatbot")
+    print("No brain found. Initialize a chatbot brain with Pybot")
     kernel.bootstrap(learnFiles="default.aiml")
     kernel.saveBrain("bot_brain.brn")
 
 #kernel ready
 while True:
-    print(kernel.respond(raw_input("Message >> ")))
+    print(kernel.respond(raw_input(">> ")))
