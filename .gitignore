@@ -60,3 +60,15 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+#PyCharm
+.idea/
+
+#OS X
+.DS_Store
+
+#virtualenv
+venv/
+
+bot_brain.brn
+update_evia.py
