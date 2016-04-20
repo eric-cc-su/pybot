@@ -4,6 +4,11 @@ import os.path
 from os import listdir
 import re
 
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
+
 class Pybot:
     def __init__(self, path=".", brain="bot_brain.brn"):
         self._brain = brain
@@ -53,18 +58,23 @@ class Pybot:
         :param files: array of filepaths for multiple files
         :return: None
         """
-        # Given a single file to teach
-        if filepath:
-            self.kernel.learn(filepath)
-        # Given a set of filepaths to teach
-        if len(files) > 0:
-            for file in files:
-                self.kernel.learn(file)
+        # Assemble list of files to learn
+        if filepath and os.path.isfile(filepath):
+            files.append(filepath)
+        elif filepath and os.path.isdir(filepath):
+            files += [os.path.join(filepath, filename) for filename in listdir(filepath) if os.path.isfile(os.path.join(filepath, filename))]
         # Teach the files given at the initial path
-        else:
-            files = [file for file in listdir(self._path) if os.path.isfile(os.path.join(self._path, file))]
-            for file in files:
-                self.kernel.learn(os.path.join(self._path, file))
+        if not filepath and len(files) == 0:
+            files = [os.path.join(self._path, file) for file in listdir(self._path) if os.path.isfile(os.path.join(self._path, file))]
+
+        for file in files:
+            # Load substitutions, exclude from learning
+            if os.path.splitext(file)[1] == "substitution":
+                self.kernel.loadSubs(self.parse_set_file(file))
+            # TODO: add support for map and set files
+            # Only learn AIML
+            elif os.path.splitext(file)[1] == "aiml":
+                self.kernel.learn(file)
         # Save the brain
         self.kernel.saveBrain(self._brain)
 
