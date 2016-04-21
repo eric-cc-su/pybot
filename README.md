@@ -1,5 +1,5 @@
 # pybot
-A simply Python interface with AIML-based chatbots.
+A simple Python interface with AIML-based chatbots.
 
 A brain file for [A.L.I.C.E.](http://www.alicebot.org/aiml.html) has been included.
 
@@ -24,10 +24,10 @@ A brain file for [A.L.I.C.E.](http://www.alicebot.org/aiml.html) has been includ
         mybot = Pybot() 
         
         # Teach Pybot with the files at the current path
-        mybot.teach()   
+        mybot.learn()   
         
         # Talk to your Pybot
-        response = mybot.talk("hello") 
+        mybot.talk("hello") 
         
 1b. User Pybot's command line interface:
 
