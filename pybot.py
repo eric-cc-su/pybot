@@ -24,33 +24,51 @@ class Pybot:
         files = [file for file in listdir(self._path) if os.path.isfile(os.path.join(self._path, file))]
         for filename in files:
             if re.search(r"(\.properties)$", filename):
-                props = self.parse_set_file(filepath=os.path.join(self._path, filename))
+                props = self.parse_kv_file(filepath=os.path.join(self._path, filename), return_dict=True)
                 for key, value in props.items():
                     self.properties[key] = value
                     self.kernel.setBotPredicate(key, value)
             if re.search(r"(\.pdefaults)$", filename):
-                pdefaults = self.parse_set_file(filepath=os.path.join(self._path, filename))
+                pdefaults = self.parse_kv_file(filepath=os.path.join(self._path, filename), return_dict=True)
                 for key, value in pdefaults.items():
                     self.properties[key] = value
                     self.kernel.setBotPredicate(key, value)
 
-    def parse_set_file(self, filepath):
+        self.kernel.bootstrap(brainFile=self._brain)
+
+    def parse_kv_file(self, filepath, return_dict=False):
         """
         Parse file with lines in format: [key, value]
 
-        :param filepath: the absolute path to the file
-        :return: dictionary object
+        :param filepath: STRING - the absolute path to the file
+        :param return_dict: BOOL - Whether to return a dictionary obj or only write to file
+        :return: None or dictionary object
         """
-        newdict = {}
+        if return_dict:
+            newdict = {}
+        else:
+            try:
+                category = os.path.splitext(filepath)[0][filepath.rindex("/")+1:]
+            except ValueError:
+                category = os.path.splitext(filepath)[0]
+            tmpfile = open("tempset.ini", "w")
+            tmpfile.write("[{}]\n".format(category))
+
         with open(filepath, 'r') as properties:
             for line in properties:
                 property = line.strip(",").strip("[]").replace("\"","").split(",")
                 if len(property) >= 2:
-                    newdict[re.search(self.keyreg, line).group(2)] = re.search(self.valuereg, line).group(3)
+                    if return_dict:
+                        newdict[re.search(self.keyreg, line).group(2)] = re.search(self.valuereg, line).group(3)
+                    else:
+                        tmpfile.write("'{}'='{}'\n".format(re.search(self.keyreg, line).group(2), re.search(self.valuereg, line).group(3)))
                     # self.kernel.setBotPredicate(key, value)
-        return(newdict)
+        if return_dict:
+            return(newdict)
+        else:
+            tmpfile.close()
 
-    def teach(self, filepath=None, files=[]):
+    def learn(self, filepath=None):
         """
         Teach the bot with the given file(s)
 
@@ -58,10 +76,11 @@ class Pybot:
         :param files: array of filepaths for multiple files
         :return: None
         """
+        files = []
         # Assemble list of files to learn
-        if filepath and os.path.isfile(filepath):
+        if os.path.isfile(filepath):
             files.append(filepath)
-        elif filepath and os.path.isdir(filepath):
+        elif os.path.isdir(filepath):
             files += [os.path.join(filepath, filename) for filename in listdir(filepath) if os.path.isfile(os.path.join(filepath, filename))]
         # Teach the files given at the initial path
         if not filepath and len(files) == 0:
@@ -69,14 +88,17 @@ class Pybot:
 
         for file in files:
             # Load substitutions, exclude from learning
-            if os.path.splitext(file)[1] == "substitution":
-                self.kernel.loadSubs(self.parse_set_file(file))
+            if os.path.splitext(file)[1] == ".substitution":
+                self.parse_kv_file(file)
+                self.kernel.loadSubs("tempset.ini")
             # TODO: add support for map and set files
             # Only learn AIML
-            elif os.path.splitext(file)[1] == "aiml":
+            elif os.path.splitext(file)[1] == ".aiml":
                 self.kernel.learn(file)
         # Save the brain
         self.kernel.saveBrain(self._brain)
+        # Re-prep Kernel for use
+        self.kernel.bootstrap(brainFile=self._brain)
 
     def talk(self, message):
         """
@@ -85,7 +107,6 @@ class Pybot:
         :param message: string, a message for the bot
         :return: string, the response from the bot
         """
-        self.kernel.bootstrap(brainFile=self.brain)
         return(self.kernel.respond(message))
 
 def main():
