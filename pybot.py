@@ -17,8 +17,9 @@ class Pybot:
         self.kernel = aiml.Kernel()
         self.properties = {}
 
-        self.keyreg = r"(\[\")([\s\S]+)(\",)" #group 2
-        self.valuereg = r"(,( )?\")([\s\S]+)(\"])" #group3
+        self.keyreg = r"(\[\")([\s\S]+)(\",)" #value = group 2
+        self.valuereg = r"(,( )?\")([\s\S]+)(\"])" #value = group3
+        self.setitemreg = r"\[((\"\w+\"(, ?)?)+)\]," #value = group 1
 
         # Search for and initialize bot properties (.properties and .pdefaults files)
         files = [file for file in listdir(self._path) if os.path.isfile(os.path.join(self._path, file))]
@@ -40,17 +41,16 @@ class Pybot:
         """
         Parse file with lines in format: [key, value]
 
-        :param filepath: STRING - the absolute path to the file
-        :param return_dict: BOOL - Whether to return a dictionary obj or only write to file
+        :param filepath: string - the absolute path to the file
+        :param return_dict: bool - Whether to return a dictionary obj or only write to file
         :return: None or dictionary object
         """
-        if return_dict:
-            newdict = {}
-        else:
-            try:
-                category = os.path.splitext(filepath)[0][filepath.rindex("/")+1:]
-            except ValueError:
-                category = os.path.splitext(filepath)[0]
+        newdict = {}
+        try:
+            category = os.path.splitext(filepath)[0][filepath.rindex("/")+1:]
+        except ValueError:
+            category = os.path.splitext(filepath)[0]
+        if not return_dict:
             tmpfile = open("tempset.ini", "w")
             tmpfile.write("[{}]\n".format(category))
 
@@ -65,6 +65,38 @@ class Pybot:
                     # self.kernel.setBotPredicate(key, value)
         if return_dict:
             return(newdict)
+        else:
+            tmpfile.close()
+
+    def parse_set_file(self, filepath, return_list=False):
+        """
+        Parse set file with lines in format ["foo"] or ["foo", "bar"] = "foo bar"
+
+        :param filepath: string - the absolute filepath
+        :param return_list: bool - Whether to return a dictionary obj or only write to file
+        :return: None or dictionary
+        """
+        newlist = []
+        try:
+            category = os.path.splitext(filepath)[0][filepath.rindex("/")+1:]
+        except ValueError:
+            category = os.path.splitext(filepath)[0]
+        if not return_list:
+            tmpfile = open("tempset.ini", "w")
+            tmpfile.write("[{}]\n".format(category))
+
+        with open(filepath, 'r') as properties:
+            for line in properties:
+                setitem = re.match(self.setitemreg, line)
+                setitem = setitem.group(1).replace("\"","").replace(",","") if setitem else None
+                if setitem and setitem != "fooz":
+                    if return_list:
+                        newlist.append(setitem)
+                    else:
+                        tmpfile.write(setitem+"\n")
+                    # self.kernel.setBotPredicate(key, value)
+        if return_list:
+            return(newlist)
         else:
             tmpfile.close()
 
