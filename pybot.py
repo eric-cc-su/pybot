@@ -51,7 +51,7 @@ class Pybot:
         except ValueError:
             category = os.path.splitext(filepath)[0]
         if not return_dict:
-            tmpfile = open("tempset.ini", "w")
+            tmpfile = open("tempsub.substitution", "w")
             tmpfile.write("[{}]\n".format(category))
 
         with open(filepath, 'r') as properties:
@@ -82,7 +82,7 @@ class Pybot:
         except ValueError:
             category = os.path.splitext(filepath)[0]
         if not return_list:
-            tmpfile = open("tempset.ini", "w")
+            tmpfile = open("tempset.set", "w")
             tmpfile.write("[{}]\n".format(category))
 
         with open(filepath, 'r') as properties:
@@ -122,9 +122,15 @@ class Pybot:
             # Load substitutions, exclude from learning
             if os.path.splitext(file)[1] == ".substitution":
                 self.parse_kv_file(file)
-                self.kernel.loadSubs("tempset.ini")
+                self.kernel.loadSubs("tempsub.substitution")
             # TODO: add support for map and set files
-            # Only learn AIML
+            # learn AIML
+            elif os.path.splitext(file)[1] == ".set":
+                try:
+                    self.parse_set_file(file)
+                    self.kernel.loadSubs("tempset.set")
+                except:
+                    pass
             elif os.path.splitext(file)[1] == ".aiml":
                 self.kernel.learn(file)
         # Save the brain
